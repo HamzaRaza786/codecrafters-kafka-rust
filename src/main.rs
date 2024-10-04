@@ -27,6 +27,6 @@ fn main() {
     }
 }
 fn handle_client(mut stream: TcpStream) {
-    let response: i32 = 7;
+    let response: i64 = 2_i64.pow(32) + 7_i64;
     stream.write_all(&response.to_be_bytes()).unwrap();
 }
