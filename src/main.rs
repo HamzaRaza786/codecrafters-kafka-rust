@@ -1,5 +1,10 @@
 #![allow(unused_imports)]
-use std::net::TcpListener;
+use std::{
+    fs,
+    io::{prelude::*, BufReader, Read, Write},
+    net::{TcpListener, TcpStream},
+    str::from_utf8,
+};
 
 fn main() {
     // You can use print statements as follows for debugging, they'll be visible when running tests.
@@ -13,10 +18,15 @@ fn main() {
         match stream {
             Ok(_stream) => {
                 println!("accepted new connection");
+                handle_client(_stream);
             }
             Err(e) => {
                 println!("error: {}", e);
             }
         }
     }
+}
+fn handle_client(mut stream: TcpStream) {
+    let response: i32 = 7;
+    stream.write_all(&response.to_ne_bytes()).unwrap();
 }
