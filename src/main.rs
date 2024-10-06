@@ -49,7 +49,7 @@ fn handle_client(mut stream: TcpStream) {
     let mut response = Vec::with_capacity(RESPONSE_LENGTH);
     response.put_i32(0); // FIXME: Should be replaced with response message length implementation.
     response.put_i32(request_headers.correlation_id);
-    if request_headers.request_api_version < 0 || request_headers.request_api_version > 4 {
+    if !(0..5).contains(&request_headers.request_api_version) {
         response.put_i16(ErrorCodes::UnsupportedVersion as i16);
     }
     stream.write_all(&response).unwrap();
