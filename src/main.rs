@@ -46,12 +46,20 @@ fn request_headers(mut stream: &TcpStream) -> Headers {
 
 fn handle_client(mut stream: TcpStream) {
     let request_headers = request_headers(&stream);
-    let mut response = Vec::with_capacity(RESPONSE_LENGTH);
-    response.put_i32(0); // FIXME: Should be replaced with response message length implementation.
-    response.put_i32(request_headers.correlation_id);
+    let mut response_body = Vec::new();
+    response_body.put_i32(request_headers.correlation_id);
     if !(0..5).contains(&request_headers.request_api_version) {
-        response.put_i16(ErrorCodes::UnsupportedVersion as i16);
+        response_body.put_i16(ErrorCodes::UnsupportedVersion as i16);
+    } else {
+        response_body.put_i16(0);
     }
+    response_body.put_i32(1);
+    response_body.put_i32(18);
+    response_body.put_i32(4);
+    let response_message_length = response_body.len() as i32;
+    let mut response = Vec::with_capacity(4 + response_body.len());
+    response.put_i32(response_message_length);
+    response.extend(response_body);
     stream.write_all(&response).unwrap();
 }
 
