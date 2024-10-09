@@ -55,13 +55,13 @@ fn request_headers(mut stream: &TcpStream) -> Headers {
     }
 }
 fn construct_response(request_headers: Headers) -> Body {
-    let error_code;
+    let supported = (0..5).contains(&request_headers.request_api_version);
 
-    if !(0..5).contains(&request_headers.request_api_version) {
-        error_code = ErrorCodes::UnsupportedVersion as i16;
-    } else {
-        error_code = 0;
-    }
+    let error_code = match supported {
+        true => 0,
+        false => ErrorCodes::UnsupportedVersion as i16,
+    };
+
     return Body {
         correlation_id: request_headers.correlation_id,
         error_code,
