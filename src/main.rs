@@ -8,7 +8,7 @@ use std::{
     string,
 };
 
-const RESPONSE_LENGTH: usize = 8;
+const MESSAGE_LENGTH_SIZE: usize = 4;
 
 enum ErrorCodes {
     UnsupportedVersion = 35,
@@ -89,10 +89,10 @@ fn handle_client(mut stream: TcpStream) {
     response_body.put_i8(body.tag_buffer);
     response_body.put_i32(body.throttle_time_ms);
     response_body.put_i8(body.tag_buffer_length);
-    
-    let response_message_length = response_body.len() as i32;
-    let mut response = Vec::with_capacity(RESPONSE_LENGTH + response_body.len());
-    response.put_i32(response_message_length);
+
+    let response_message_length = response_body.len() as usize;
+    let mut response = Vec::with_capacity(MESSAGE_LENGTH_SIZE + response_message_length);
+    response.put_i32(response_message_length as i32);
     response.extend(response_body);
     stream.write_all(&response).unwrap();
 }
