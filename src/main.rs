@@ -77,7 +77,7 @@ fn construct_response(request_headers: Headers) -> Body {
 
 fn handle_client(mut stream: TcpStream) {
     let request_headers = request_headers(&stream);
-    let mut response_body = Vec::new();
+    let mut response_body = vec![];
     response_body.put_i32(request_headers.correlation_id);
     if !(0..5).contains(&request_headers.request_api_version) {
         response_body.put_i16(ErrorCodes::UnsupportedVersion as i16);
