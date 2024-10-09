@@ -8,7 +8,7 @@ use std::{
     string,
 };
 
-const RESPONSE_LENGTH: usize = 8;
+const MESSAGE_LENGTH_SIZE: usize = 4;
 
 enum ErrorCodes {
     UnsupportedVersion = 35,
@@ -20,6 +20,17 @@ struct Headers {
     correlation_id: i32,
     client_id: Option<String>,
     tagged_fields: Option<String>,
+}
+struct Body {
+    correlation_id: i32,
+    error_code: i16,
+    num_api_keys_records: i8,
+    api_key: i16,
+    min_version: i16,
+    max_version: i16,
+    tag_buffer: i8,
+    throttle_time_ms: i32,
+    tag_buffer_length: i8,
 }
 
 fn message_length(mut stream: &TcpStream) -> usize {
@@ -43,15 +54,46 @@ fn request_headers(mut stream: &TcpStream) -> Headers {
         tagged_fields: None,
     }
 }
+fn construct_response(request_headers: &Headers) -> Body {
+    let supported = (0..5).contains(&request_headers.request_api_version);
+
+    let error_code = match supported {
+        true => 0,
+        false => ErrorCodes::UnsupportedVersion as i16,
+    };
+
+    return Body {
+        correlation_id: request_headers.correlation_id,
+        error_code,
+        num_api_keys_records: 2,
+        api_key: request_headers.request_api_key,
+        min_version: 0,
+        max_version: 4,
+        tag_buffer: 0,
+        throttle_time_ms: 420,
+        tag_buffer_length: 0,
+    };
+}
 
 fn handle_client(mut stream: TcpStream) {
     let request_headers = request_headers(&stream);
-    let mut response = Vec::with_capacity(RESPONSE_LENGTH);
-    response.put_i32(0); // FIXME: Should be replaced with response message length implementation.
-    response.put_i32(request_headers.correlation_id);
-    if !(0..5).contains(&request_headers.request_api_version) {
-        response.put_i16(ErrorCodes::UnsupportedVersion as i16);
-    }
+    let body = construct_response(&request_headers);
+
+    let mut response_body = vec![];
+    response_body.put_i32(body.correlation_id);
+    response_body.put_i16(body.error_code);
+    response_body.put_i8(body.num_api_keys_records);
+    response_body.put_i16(body.api_key);
+    response_body.put_i16(body.min_version);
+    response_body.put_i16(body.max_version);
+    response_body.put_i8(body.tag_buffer);
+    response_body.put_i32(body.throttle_time_ms);
+    response_body.put_i8(body.tag_buffer_length);
+
+    let response_message_length = response_body.len() as usize;
+    let mut response = Vec::with_capacity(MESSAGE_LENGTH_SIZE + response_message_length);
+    response.put_i32(response_message_length as i32);
+    response.extend(response_body);
     stream.write_all(&response).unwrap();
 }
 
